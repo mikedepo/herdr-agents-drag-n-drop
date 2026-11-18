@@ -7,13 +7,14 @@ terminal lands there as a pane. Its pane header names it (`route-export`, not
 "Claude Code"), says what it's working on, and carries a Detach button that sends it back under its agent,
 still running, where the header's × would have ended it. The agents list it
 lives in nests sub-agents under their agent, lists each one once, and groups by
-space, main space, name prefix or priority.
+space, main space, name prefix or priority. And a terminal's right-click menu
+gets Copy and Paste.
 
 ![Agents Drag n Drop](preview.png)
 
 ## What you see
 
-Three parts, all drawn by one mod.
+Four parts, all drawn by one mod.
 
 **The agents list**, a sidebar block on `chrome`, 13px text:
 
@@ -78,6 +79,22 @@ name already gives: `pr-12`, titled "PR-12: Retry failed uploads" or "M2.pr-12 R
 failed uploads", is working on "Retry failed uploads". Only an agent with a name
 has one, and none when its title is only its name, a path or the program's name.
 
+**The terminal menu**, on right-clicking a terminal: a popup at the pointer, 5px
+padding on `popover`, 12.8px text. Rows 31px, radius 7, each a 14px icon in
+`muted`, the label, and the bound key at the right (11px, `dim`); the first row is
+`selected`, a hovered one `hover`. In order:
+
+- **Copy** (`copy`) and **Paste** (`paste`), hinting `ctrl-shift-c` and
+  `ctrl-shift-v`. Copy is `dim`, and does nothing, while the terminal has no
+  selection.
+- A line, then Herdr's own pane items: Split right, Split down, Zoom (Unzoom when
+  zoomed), "Send right-clicks to pane" (or "Use Herdr right-click menu" once they go
+  to the program), "Send back to <parent>" on a sub-agent, and after a line,
+  Close pane.
+
+A terminal shown outside a tab (a layout terminal block, a window) gets only Copy,
+Paste and the right-click switch.
+
 ## How it behaves
 
 - **Drag a sub-agent row** at least 6px: the drop map opens under the pointer, and
@@ -95,6 +112,10 @@ has one, and none when its title is only its name, a path or the program's name.
   gets "Go to it"; one that ended says so.
 - **Detach** takes the pane away; the sub-agent keeps running and is back under its
   agent in the list. The × still closes the pane and ends it.
+- **Copy** copies the right-clicked terminal's selection; **Paste** pastes into the
+  right-clicked terminal. Both focus that terminal first and act once it has focus,
+  so they never land in another one. ↑/↓ move through the menu (past a greyed Copy),
+  Enter runs, Esc closes.
 - **Clicking** an agent row focuses its pane. A sub-agent row goes to its pane
   when it has one, else opens Herdr's peek over the tab. Clicking an agent's icon
   or its chevron folds its sub-agents; folded, the chevron shows how many, coloured
@@ -118,24 +139,28 @@ has one, and none when its title is only its name, a path or the program's name.
 
 - **One mod folder**, `mods/agents-drag-n-drop/`, `mod.json`
   `{ "place": "none", "title": "Agents Drag n Drop" }`. `main.js` picks the part
-  each copy draws: `props.view === "drop"` the drop map (`drop.js`), `props.pane`
-  (given to pane headers by the app) the header (`header.js`), anything else the
-  agents list (`agents.js`). Beside them: `names.js` (a pane's name and a sub-agent's
-  task, shared by the list, the header and the map), `parents.js` (the main-space lookup), `ui.js` (sizes, icons,
-  badge, buttons, group header, menu, tree rail), `find-node.js`, `icons/` (17
-  one-colour SVGs drawn with `svg()`), `NOTICE.md`.
-- **Two references in a layout the person owns**, nothing else changed:
+  each copy draws: `props.view === "drop"` the drop map (`drop.js`), `props.tab ===
+  "pane"` with `props.target` (given to the terminal menu by the app) the menu
+  (`menu.js`), `props.pane` (given to pane headers) the header (`header.js`),
+  anything else the agents list (`agents.js`). Beside them: `names.js` (a pane's
+  name and a sub-agent's task, shared by the list, the header and the map),
+  `parents.js` (the main-space lookup), `ui.js` (sizes, icons, badge, buttons, group
+  header, menu, tree rail), `find-node.js`, `icons/` (20 one-colour SVGs drawn with
+  `svg()`), `NOTICE.md`.
+- **Three references in a layout the person owns**, nothing else changed:
   - the agents block: `{ "id": "agents", "type": "block", "content": { "mod": "agents-drag-n-drop" } }`;
   - the tab block's pane header: `"pane": { "header": { "content": { "mod":
-    "agents-drag-n-drop" }, "height": 30, "position": "top", "reveal": "always" } }`.
+    "agents-drag-n-drop" }, "height": 30, "position": "top", "reveal": "always" } }`;
+  - at the root: `"terminal_menu": "agents-drag-n-drop"`.
   The sidebar column's id is `sidebar` (the rail reads its width).
 - **The drop map** is opened by the list with `openOverlay({ mod:
   "agents-drag-n-drop", kind: "popup", width: 560, height: 400, at, props: { view:
   "drop", terminal, name } })`.
 - **herdr**: `agents`, `terminals`, `panes`, `focused`, `spaces`, `run`, `theme`,
   `shared`, `setShared`, `setAgentOrder`, `window`, `layout`, `openOverlay`,
-  `closeOverlay`, `settings`, `props`, `home`, `exec`. **Commands**: `pane.focus`,
-  `terminal.keep`, `pane.swap`, `terminal.park`, `terminal.peek`, `terminal.pin`,
+  `closeOverlay`, `settings`, `props`, `home`, `exec`, `keys`. **Commands**:
+  `pane.focus`, `terminal.keep`, `pane.swap`, `terminal.park`, `terminal.peek`,
+  `terminal.pin`, `terminal.copy`, `terminal.paste`, `terminal.right_click`,
   `pane.split`, `pane.zoom`, `pane.close`, `layout.resize`. **gpui-base**:
   `h_flex`, `v_flex`, `Popover` (the sort menu).
 - **Programs**: only `git rev-parse --path-format=absolute --git-common-dir
@@ -162,6 +187,13 @@ has one, and none when its title is only its name, a path or the program's name.
   `pending`: focus the target first, wait for the pane in `panes()` before
   `pane.swap`, and close the map last, because closing a copy cancels its tasks.
 - **Closing a pane ends its terminal**; Detach is `terminal.park`.
+- **`terminal.copy` with nothing selected hands the key to the program**, where it
+  stops a working agent, as Ctrl+C does (Herdr's copy keys are Ctrl+Shift+C and
+  Ctrl+Insert). Run it only while `focused().selection` is set.
+- **`terminal.copy` and `terminal.paste` act on the focused terminal**, not the one
+  right-clicked: focus it (`pane.focus`), wait until `focused()` names it, then run.
+- **A terminal menu replaces Herdr's whole menu**: it doesn't add to it, so this one
+  carries Herdr's pane items too.
 - **A sub-agent with a pane is in `agents()` too**: hide its own row where its
   agent's tree shows it.
 - **Herdr's spaces carry no repository**: "Grouped by main space" asks Git. On
@@ -188,8 +220,12 @@ has one, and none when its title is only its name, a path or the program's name.
   each of the four edges.
 - The place button opens the same map; clicking an edge places; Open as a tab gives
   a tab; Esc closes with nothing changed.
-- The placed sub-agent's header shows its name, what it's working on, and Detach; Detach returns it to the
-  list still running; its agent's header shows the session title.
+- The placed sub-agent's header shows its name, what it's working on, and Detach;
+  Detach returns it to the list still running; its agent's header shows the session
+  title.
+- Right-clicking a terminal shows Copy greyed out with nothing selected; with a
+  selection, Copy copies it and the agent keeps working; Paste pastes into the
+  terminal right-clicked, even when another pane had focus.
 - A pin from the list shows in the Pinned group, and in Herdr's own agents list.
 - With "Grouped by main space", a worktree's agents sit under its main checkout's
   space.

@@ -14,4 +14,9 @@ once, and dragging or placing sub-agents through the drop map.
 (https://github.com/herdrdev/herdr-app), Apache License, Version 2.0.
 Changed here: agent names and the Detach button.
 
+`menu.js` is adapted from Herdr Desktop's shipped `menu` mod (same repository and
+license): its terminal items. Changed here: Copy and Paste, and its own icons.
+`copy`, `paste` and `terminal` are drawn here after Lucide's copy, clipboard and
+terminal (ISC License).
+
 `detach.svg` is Lucide's square-arrow-out-down-left (ISC License).

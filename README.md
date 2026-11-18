@@ -18,6 +18,9 @@ list and drop it into the tab you're looking at, beside any pane.
 - **An agents list built for sub-agents.** Sub-agents nest under their agent and are
   listed once, with a pane or without. Group by space, main space (worktrees with
   their repository), name prefix or priority. Pins are Herdr's own.
+- **Copy and Paste on right-click.** The terminal's right-click menu adds Copy and
+  Paste for the terminal you clicked. Copy stays greyed out until text is selected,
+  so it never reaches a working agent as Ctrl+C.
 
 | Drop map | Agents list | Pane header |
 |---|---|---|
@@ -31,7 +34,7 @@ Copy this prompt into your Herdr agent:
 
 By hand: copy `mods/agents-drag-n-drop/` into `~/.config/herdr-app/mods/`. Then, in a
 layout of your own (Herdr's shipped layouts are read-only: clone `main` with
-`herdr-app do layout.clone '{"name":"main","as":"my-main"}'`), point two places at
+`herdr-app do layout.clone '{"name":"main","as":"my-main"}'`), point three places at
 the mod:
 
 ```json
@@ -42,11 +45,18 @@ the mod:
 "pane": { "header": { "content": { "mod": "agents-drag-n-drop" }, "height": 30, "position": "top", "reveal": "always" } }
 ```
 
+and, at the layout's root:
+
+```json
+"terminal_menu": "agents-drag-n-drop"
+```
+
 [RECIPE.md](RECIPE.md) describes the whole mod, for building it from scratch.
 
 ## What it runs
 
-Herdr commands only (`terminal.keep`, `pane.swap`, `terminal.park`, ...). The one
+Herdr commands only (`terminal.keep`, `pane.swap`, `terminal.park`,
+`terminal.copy`, ...). The one
 program it starts is `git rev-parse`, read-only, while "Grouped by main space" is
 chosen. No network.
 
