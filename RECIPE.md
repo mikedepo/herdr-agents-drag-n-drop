@@ -4,7 +4,7 @@ Put a sub-agent on screen where you want it. Drag a sub-agent out of the agents
 list and a drop map opens under the pointer: the shown tab's panes as cards, and
 the edge you hover previews the split it will make. Let go and the sub-agent's
 terminal lands there as a pane. Its pane header names it (`route-export`, not
-"Claude Code") and carries a Detach button that sends it back under its agent,
+"Claude Code"), says what it's working on, and carries a Detach button that sends it back under its agent,
 still running, where the header's × would have ended it. The agents list it
 lives in nests sub-agents under their agent, lists each one once, and groups by
 space, main space, name prefix or priority.
@@ -31,7 +31,8 @@ Three parts, all drawn by one mod.
   `2h`, `3d`), and its status. The focused agent's row is filled `selected`.
 - Sub-agent rows under their agent, 26px, indented 39px, joined by tree rails
   (1.5px `input` lines, rounded 6 where they turn): a 14px program icon, the
-  sub-agent's name (12.5px), and its status. Hovering one that has no pane shows a
+  sub-agent's name (12.5px), what it's working on (11px, `dim`, the whole of it
+  as a tooltip), and its status. Hovering one that has no pane shows a
   place button (`panel-right`, 13px) before the status.
 - Narrower than 160px: a rail of numbered rows with only their status, and `»`
   at the bottom to widen it again.
@@ -43,24 +44,25 @@ so; **done** a 7px `done` dot; **idle** a 7px ring in `idle`.
 
 **The drop map**, a popup at the pointer: 520px wide, 14px padding, 10px gaps.
 
-- "Place docs-site" (15px semibold) after the sub-agent's 16px icon; "Esc" (11px,
-  `dim`) at the right.
+- "Place docs-site" (15px semibold) after the sub-agent's 16px icon, then what it's
+  working on (`muted`); "Esc" (11px, `dim`) at the right.
 - One `muted` line saying what will happen: "Drop it on the edge of a pane where it
   should go.", then "docs-site goes below route-export." while aiming.
 - The map, 250px high on `canvas`, radius 8: the shown tab's panes as cards in a
   grid of ⌈√n⌉ columns, 8px apart. A card has radius 8, a 1px `border` (`accent`
   for the focused pane), and in its middle the program's 22px icon, the pane's
-  name and its folder (11px, `dim`).
+  name, and under it what a sub-agent is working on, else its folder (11px, `dim`).
 - Aiming at a card shows the split: the card divides at that edge into the pane,
-  dimmed to half, and a landing block with the sub-agent's name (semibold) on
-  `accent` at 20% with a 1px `accent` border, radius 6.
+  dimmed to half, and a landing block with the sub-agent's name (semibold) and what
+  it's working on (11px, `muted`) on `accent` at 20% with a 1px `accent` border, radius 6.
 - A footer: "Move it later with the grip at the top of a pane." (11.5px, `dim`)
   and a 28px "Open as a tab" button; "Go to it" instead when the sub-agent already
   has a pane.
 
 **The pane header**, on every pane: full width, 12px text on `background`, a 1px
 `border` line on the side facing the terminal. The program's 14px icon, the pane's
-name (medium, at most 260px), its folder (`dim`), its status, then:
+name (medium, at most 260px), what a sub-agent is working on (`muted`), its folder
+(`dim`), its status, then:
 
 - On hover: split right, split down, zoom (or unzoom) and close, 14px icons in
   `dim` that turn `foreground` on hover.
@@ -70,6 +72,11 @@ name (medium, at most 260px), its folder (`dim`), its status, then:
 The pane's name is its terminal's name when it has one (`route-export`), else the
 agent's session title as it set it ("Ship trip export", without Claude Code's ✳),
 else the program's name.
+
+What a sub-agent is working on is its session's title too, after any reference its
+name already gives: `pr-12`, titled "PR-12: Retry failed uploads" or "M2.pr-12 Retry
+failed uploads", is working on "Retry failed uploads". Only an agent with a name
+has one, and none when its title is only its name, a path or the program's name.
 
 ## How it behaves
 
@@ -113,8 +120,8 @@ else the program's name.
   `{ "place": "none", "title": "Agents Drag n Drop" }`. `main.js` picks the part
   each copy draws: `props.view === "drop"` the drop map (`drop.js`), `props.pane`
   (given to pane headers by the app) the header (`header.js`), anything else the
-  agents list (`agents.js`). Beside them: `names.js` (a pane's name, shared by the
-  header and the map), `parents.js` (the main-space lookup), `ui.js` (sizes, icons,
+  agents list (`agents.js`). Beside them: `names.js` (a pane's name and a sub-agent's
+  task, shared by the list, the header and the map), `parents.js` (the main-space lookup), `ui.js` (sizes, icons,
   badge, buttons, group header, menu, tree rail), `find-node.js`, `icons/` (17
   one-colour SVGs drawn with `svg()`), `NOTICE.md`.
 - **Two references in a layout the person owns**, nothing else changed:
@@ -160,7 +167,11 @@ else the program's name.
 - **Herdr's spaces carry no repository**: "Grouped by main space" asks Git. On
   Windows its paths come back with `/`.
 - **Agents' titles start with a status mark** (Claude Code's ✳): strip leading
-  non-letters before showing one as a name.
+  non-letters before showing one as a name, but test for a path first, or `~/`
+  goes with the mark.
+- **A sub-agent's title is in `terminals()`** (`title`), with a pane or without:
+  `hc ls --json` doesn't print it, `hc get` does. Its name is often a reference its
+  title starts with (`PR-12: …`): drop it, or the row says it twice.
 - **Write `mod.json` before the other files**: the first time Herdr sees a mod
   folder without one, it docks a copy into the shown layout.
 - **Herdr's shipped layouts are read-only**: clone `main` (`layout.clone`) and
@@ -170,14 +181,14 @@ else the program's name.
 ## Done when
 
 - `herdr-app check mods/agents-drag-n-drop` passes.
-- The list shows each agent with its status, sub-agents nested under their agent,
-  and a sub-agent that has a pane only once.
+- The list shows each agent with its status, sub-agents nested under their agent
+  with what they're working on, and a sub-agent that has a pane only once.
 - Dragging a sub-agent row opens the drop map under the pointer; moving over a card
   previews the split at the nearest edge; releasing places the sub-agent there, for
   each of the four edges.
 - The place button opens the same map; clicking an edge places; Open as a tab gives
   a tab; Esc closes with nothing changed.
-- The placed sub-agent's header shows its name and Detach; Detach returns it to the
+- The placed sub-agent's header shows its name, what it's working on, and Detach; Detach returns it to the
   list still running; its agent's header shows the session title.
 - A pin from the list shows in the Pinned group, and in Herdr's own agents list.
 - With "Grouped by main space", a worktree's agents sit under its main checkout's

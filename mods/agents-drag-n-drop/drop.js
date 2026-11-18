@@ -12,7 +12,7 @@
 import { div, svg, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { props, panes, terminals, focused, theme, run, closeOverlay } from "herdr";
-import { paneName } from "./names.js";
+import { paneName, taskOf } from "./names.js";
 
 const WHERE = { left: "left of", right: "right of", up: "above", down: "below" };
 
@@ -117,6 +117,7 @@ export class DropMap {
     const address = this.address();
     const sub = terminals().find((k) => k.address === address);
     const name = props()?.name || sub?.name || address || "sub-agent";
+    const task = taskOf(sub);
     const tab = focused()?.tab;
     const list = panes().filter((p) => p.tab === tab);
     const own = this.ownPane();
@@ -155,11 +156,13 @@ export class DropMap {
           .gap(8)
           .items_center()
           .child(icon(sub?.program, 16, t.foreground) ?? div())
-          .child(div().flex_1().min_w(0).truncate().text_size(15).font_semibold().child(`Place ${name}`))
+          .child(div().min_w(0).truncate().text_size(15).font_semibold().child(`Place ${name}`))
+          // What it's working on, quietly; it also keeps Esc at the right.
+          .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(task ?? ""))
           .child(div().text_size(11).text_color(t.dim).child("Esc")),
       )
       .child(div().h(18).truncate().text_color(t.muted).child(hint))
-      .child(this.map(t, list, name, disabled))
+      .child(this.map(t, list, name, task, disabled))
       .child(
         h_flex()
           .gap(10)
@@ -186,7 +189,7 @@ export class DropMap {
 
   // The shown tab's panes, as cards in a grid: not their real arrangement,
   // which mods can't see, but each card is the pane it names.
-  map(t, list, name, disabled) {
+  map(t, list, name, task, disabled) {
     const cols = Math.max(1, Math.ceil(Math.sqrt(list.length)));
     const rows = [];
     for (let i = 0; i < list.length; i += cols) rows.push(list.slice(i, i + cols));
@@ -205,12 +208,12 @@ export class DropMap {
             .flex_1()
             .min_h(0)
             .gap(8)
-            .children(row.map((p) => this.card(t, p, name, disabled))),
+            .children(row.map((p) => this.card(t, p, name, task, disabled))),
         ),
       );
   }
 
-  card(t, p, name, disabled) {
+  card(t, p, name, task, disabled) {
     const edge = !disabled && this.target?.pane === p.pane ? this.target.edge : null;
     const face = this.face(t, p, Boolean(edge));
     return v_flex()
@@ -235,12 +238,15 @@ export class DropMap {
             this.place(p.pane, edgeOf(e) ?? this.target.edge, cx);
           }),
       )
-      .child(edge ? this.split(edge, face, this.landing(t, name)) : face);
+      .child(edge ? this.split(edge, face, this.landing(t, name, task)) : face);
   }
 
   // The pane as it is now; squeezed while a split is previewed beside it.
   face(t, p, squeezed) {
     const pic = icon(p.program, 22, t.foreground);
+    const term = p.terminal ? terminals().find((k) => k.address === p.terminal) : null;
+    // A sub-agent's pane: what it's working on says more than its folder.
+    const under = taskOf(term) ?? (p.cwd ? folderName(p.cwd) : null);
     return v_flex()
       .flex_1()
       .min_w(0)
@@ -251,14 +257,14 @@ export class DropMap {
       .justify_center()
       .when(squeezed, (el) => el.opacity(0.5))
       .when(Boolean(pic), (el) => el.child(pic))
-      .child(div().w_full().text_center().truncate().child(paneName(p)))
-      .when(Boolean(p.cwd), (el) =>
-        el.child(div().w_full().text_center().truncate().text_size(11).text_color(t.dim).child(folderName(p.cwd))),
+      .child(div().w_full().text_center().truncate().child(paneName(p, term)))
+      .when(Boolean(under), (el) =>
+        el.child(div().w_full().text_center().truncate().text_size(11).text_color(t.dim).child(under)),
       );
   }
 
   // Where the sub-agent would land.
-  landing(t, name) {
+  landing(t, name, task) {
     return v_flex()
       .flex_1()
       .min_w(0)
@@ -270,7 +276,10 @@ export class DropMap {
       .border_1()
       .border_color(t.accent)
       .bg(t.accent + "33")
-      .child(div().w_full().text_center().truncate().font_semibold().child(name));
+      .child(div().w_full().text_center().truncate().font_semibold().child(name))
+      .when(Boolean(task), (el) =>
+        el.child(div().w_full().text_center().truncate().text_size(11).text_color(t.muted).child(task)),
+      );
   }
 
   split(edge, face, landing) {

@@ -11,8 +11,10 @@ list and drop it into the tab you're looking at, beside any pane.
   place button.
 - **Detach.** A sub-agent's pane header always shows Detach: it goes back under its
   agent in the list, still running. The header's × would end it.
-- **Names, not "Claude Code".** Pane headers show a sub-agent's name
-  (`route-export`), or an agent's session title ("Ship trip export").
+- **Names, not "Claude Code".** A sub-agent goes by its name and what it's working
+  on, from its session title: `pr-12`, titled "PR-12: Retry failed uploads", reads
+  `pr-12  Retry failed uploads` in the list, its pane header and the drop map. An
+  agent's pane header shows its session title ("Ship trip export").
 - **An agents list built for sub-agents.** Sub-agents nest under their agent and are
   listed once, with a pane or without. Group by space, main space (worktrees with
   their repository), name prefix or priority. Pins are Herdr's own.

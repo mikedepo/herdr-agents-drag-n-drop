@@ -26,6 +26,7 @@ import {
 } from "herdr";
 import { findNode } from "./find-node.js";
 import { SpaceParents } from "./parents.js";
+import { taskOf } from "./names.js";
 import { TEXT, Icon, IconButton, GroupHeader, Menu, MenuLabel, MenuOption } from "./ui.js";
 
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
@@ -305,6 +306,8 @@ export class Agents {
     const pic = icon(k.program, 14, t.foreground);
     const on = k.address === shown;
     const label = k.name || k.template || k.program?.name || k.address;
+    // pr-12 alone says little: what it's working on follows, quietly.
+    const task = taskOf(k);
     // Only a sub-agent without a pane can be placed.
     const own = panes().find((p) => p.terminal === k.address);
     const placeable = !own;
@@ -350,11 +353,31 @@ export class Agents {
       )
       .when(Boolean(pic), (el) => el.child(div().mr(8).child(pic)))
       .child(
-        div()
+        h_flex()
           .flex_1()
-          .truncate()
-          .text_color(on ? t.foreground : t.muted)
-          .child(label),
+          .min_w(0)
+          .gap(5)
+          .items_center()
+          .child(
+            div()
+              .min_w(0)
+              .truncate()
+              .text_color(on ? t.foreground : t.muted)
+              .child(label),
+          )
+          .when(Boolean(task), (el) =>
+            el.child(
+              div()
+                .id(`task-${k.address}`)
+                .flex_1()
+                .min_w(0)
+                .truncate()
+                .text_size(TEXT.caption)
+                .text_color(t.dim)
+                .tooltip(task)
+                .child(task),
+            ),
+          ),
       )
       .when(placeable && this.subHovered === k.address, (el) =>
         el.child(

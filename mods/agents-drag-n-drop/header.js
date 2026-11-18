@@ -2,15 +2,15 @@
 // Adapted from Herdr's shipped pane header. Shows the program's icon, the pane's
 // name, its folder and the agent's status; buttons split, zoom and close it.
 // Props from the app: { pane, terminal }. Click: focus the pane.
-// Changed here: a named terminal (a sub-agent such as route-export) goes by its name,
-// else an agent by its session's title; a sub-agent's pane always shows Detach,
+// Changed here: a named terminal (a sub-agent such as route-export) goes by its name
+// and what it's working on, else an agent by its session's title; a sub-agent's pane always shows Detach,
 // which sends it back under its agent still running (terminal.park), since
 // closing the pane ends it.
 
 import { div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { panes, props, run, theme, home, layout, terminals } from "herdr";
-import { paneName } from "./names.js";
+import { paneName, taskOf } from "./names.js";
 
 const ICONS = "mods/agents-drag-n-drop/icons";
 
@@ -71,6 +71,8 @@ export class PaneHeader {
     if (!p) return div();
     const term = p.terminal ? terminals().find((k) => k.address === p.terminal) : null;
     const name = paneName(p, term);
+    // A named sub-agent's name is often a reference (pr-12): its task follows.
+    const task = taskOf(term);
     const pic = icon(p.program, 14, t.dim);
     const st = p.status;
     const pane = p.pane;
@@ -95,6 +97,7 @@ export class PaneHeader {
       .on_click(() => run("pane.focus", { pane }))
       .when(Boolean(pic), (el) => el.child(pic))
       .child(div().flex_none().truncate().max_w(260).font_medium().text_color(t.foreground).child(name))
+      .when(Boolean(task), (el) => el.child(div().min_w(0).truncate().text_color(t.muted).child(task)))
       .child(div().flex_1().truncate().text_color(t.dim).child(folder(p.cwd)))
       .when(st === "working", (el) =>
         el.child(svg(`${ICONS}/spinner.svg`).size(12).flex_none().text_color(t.working).spin(900)),
